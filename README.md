@@ -1,183 +1,203 @@
 ---
-title: "Estrutura Básica do RMarkdown"
+title: "ANOVA de duas vias no R"
 author: "Fernanda Fiel Peres"
-date: "21/07/2020"
-output: html_document
+date: "`r format(Sys.time(), '%d %B, %Y')`"
+output:
+    html_document:
+       highlight: textmate
+       includes:
+         in_header: "cabecalho2.html"
+       theme: flatly
+       number_sections: yes
+       toc: yes
+       toc_float:
+         collapsed: yes
+         smooth_scroll: no
 ---
 
-# Elementos básicos do RMarkdown
   
-## Títulos
+# Contextualização
   
-Os títulos são definidos pela presença e pela quantidade de #.  
-Um único # define o título 1 (o maior na hierarquia), dois # definem o título 2, e assim sucessivamente.  
-`# Título 1`  
-`## Título 2`  
+O banco de dados analisado traz os resultados de um experimento realizado com homens e mulheres que consumiram ou não álcool (divididos em três grupos: não consumiu álcool, consumiu duas canecas, consumiu três canecas). Após esse consumo, foi avaliada a memória e a latência para a realização de uma tarefa cognitiva. Desejamos **avaliar se o consumo de álcool afetou a memória e se esse efeito depende do gênero**. Para isso, será realizada uma ANOVA de duas vias, com "Gênero" e "Consumo de Álcool" como variáveis independentes.
   
   
-## Formatação
-* Para que duas frases fiquem em linhas separadas, dê dois espaços entre elas;
-* Os dois espaços funcionam também para deixar uma linha em branco;
-* Para deixar uma palavra em **negrito**, coloque-a entre quatro asteriscos: `**negrito**`
-* Para deixar uma palavra em *itálico*, coloque-a entre dois asteriscos: `*itálico*`
-* Para deixar caracteres ^sobrescritos^, coloque-os entre acentos circunflexos: `^1^`
-* Para deixar caracteres ~subscritos~, coloque-os entre til: `~1~`
-* Para destacar um termo como `código`, coloque-o entre crases (backticks): `` `código` ``
-* Para criar uma citação (quote), escreva o texto após um sinal de maior: `> Citação`
-
-> Citação
+# Carregamento dos pacotes
   
-  
-  
-## Adicionando links, imagens e notas de rodapé
-
-### Adicionando links:
-`[Nome do Link](Endereço do Link)`  
-  
-**Exemplo:**  
-[Canal do YouTube](https://youtube.com/c/FernandaPeres)
-  
-  
-### Adicionando imagens
-`![Legenda](Endereço da Imagem)`  
-  
-**Exemplo:**  
-![Logo do RMarkdown](https://miro.medium.com/max/600/1*sCJzUnDilAuvGrlllJeXKw.jpeg){ width=35% }
-
-### Criando notas de rodapé (clicáveis)
-
-Há duas opções:  
-  
-1. Escrever ao final do texto `[^1]` e então (pode ser logo abaixo, ou depois) escrever a nota de rodapé:  
-"Essa informação não é um consenso `[^1]`"  
-`[^1]: Esta é uma nota de rodapé.`  
-  
-  
-2. Colocar a informação da nota de rodapé no meio do texto, e o R numerará automaticamente:  
-"Essa informação não é um consenso `^[Esta é uma nota de rodapé]`"
-  
-  
-**Exemplo:**  
-  
-O RMarkdown é uma ferramenta excelente para documentar seus códigos e apresentar os resultados. As muitas funcionalidades dele são descritas detalhadamente no livro R Markdown: The Definitive Guide [^1].
-
-[^1]: R Markdown: The Definitive Guide. Yihui Xie, J. J. Allaire, Garrett Grolemund. Disponível em: <https://bookdown.org/yihui/rmarkdown/>
-
-
-## Criando listas
-
-### Listas não-ordenadas:
-Usamos asterisco para criar o item, sinal de adição para criar o subitem e traço para criar o sub-subitem. A cada nível devem ser dados 4 espaços antes.  
-`* Item`  
-`    + Subitem`  
-`        - Sub-subitem`
-  
-**Exemplo:**
-  
-* Item 1
-    + Subitem 1
-    + Subitem 2
-        - Sub-subitem 1
-* Item 2
-* Item 3
-  
-  
-### Listas ordenadas:
-`1. Item`  
-`    i) Subitem`  
-`        A. Sub-subitem`
-  
-**Exemplo:**
-  
-1. Item 1
-    i) Subitem 1
-    ii) Subitem 2  
-        A. Sub-subitem 1
-2. Item 2
-3. Item 3
-
-
-## Adicionando equações
-As equações no RMarkdown são escritas com a linguagem LaTeX.  
-  
-Para que a equação apareça no meio do texto, devemos escrevê-la entre dois cifrões: `$equação$`
-  
-"Esse cálculo é realizado pela equação $\sum_{i = 1} (x_i - \mu)^2$, como comentado no item anterior."
-  
-Para que a equação apareça no formato destacado (display), deve ser colocada entre quatro cifrões:  
-`$$equação$$`
-  
-Esse cálculo é realizado através da equação abaixo:
-$$\sum_{i=1}^{n}\left( \frac{X_i}{Y_i} \right)$$
-
-# Incluindo códigos R
-
-Para adicionar qualquer código em R, devemos iniciar com três crases, seguidas por `{r}` e para encerrar o bloco de código, devemos fechá-lo com outras três crases.  
-
-
-**Exemplos:**  
-  
-```{r pacotes}
-library(dplyr)
-library(rstatix)
+```{r Pacotes, message=FALSE, warning=FALSE}
+library(dplyr)                                
+library(car)                                
+library(rstatix)                                
+library(emmeans)
+library(ggplot2)
+library(knitr)
+library(kableExtra)
+library(htmltools)
 ```
-
-```{r carregamento do banco de dados}
-dados <- read.csv2("Banco de Dados 6.csv")
+  
+  
+# Leitura e visualização do banco de dados
+  
+```{r Leitura e tipos de variáveis}
+dados <- read.csv2('Banco de Dados 6.csv')
 glimpse(dados)
 ```
   
-  
-Visualização do banco de dados (desformatado)
-```{r visualização do banco}
-head(dados, 10)
-```
-  
-Visualização em tabela (das 10 primeiras entradas)
-```{r}
-library(knitr)
-kable(head(dados, 10))
-```
-  
-Visualização em tabela (todas as entradas, separadas em páginas)
-```{r}
-library(rmarkdown)
-paged_table(dados)
-```
-  
-  
-**Opções para o "chunk":**  
 
-* `eval = FALSE`: Exclui o resultado, mas não a fórmula 
-* `echo = FALSE`: Exclui a fórmula, mas não o resultado  
-* `include = FALSE`: Exclui o resultado e a fórmula, mas o chunk ainda é rodado  
-* `message = FALSE`: Exclui as mensagens  
-* `warning = FALSE`: Exclui os avisos  
-  
-  
-Usando `eval = FALSE`:  
-```{r, eval = FALSE}
-boxplot(dados$Memoria ~ dados$Genero)
+```{r Visualização banco}
+kable(head(dados, 10), col.names = c("Gênero", "Álcool", "Memória", "Latência")) %>%
+  kable_styling(full_width = F, bootstrap_options = c("striped", "hover", "condensed", "responsive"))
 ```
   
   
-Usando `echo = FALSE`:  
-```{r, echo = FALSE}
-boxplot(dados$Memoria ~ dados$Alcool)
+<br>
+O banco contém `r nrow(dados)` sujeitos experimentais, sendo `r nrow(dados[which(dados$Genero=="Feminino"),])` do gênero feminino.
+  
+  
+  
+## Ordenando a variável "Álcool"
+Colocar as categorias em uma ordem lógica (nenhum consumo, duas canecas e quatro canecas) vai facilitar a visualização dos dados no gráfico.
+```{r Ordenando álcool}
+dados$Alcool <- factor(dados$Alcool,
+                       levels = c("Nenhum",
+                                  "2 Canecas",
+                                  "4 Canecas"))
 ```
   
   
-Usando `include = FALSE`:  
-```{r, include = FALSE}
-boxplot(dados$Memoria ~ dados$Alcool)
+# Verificação dos pressupostos do modelo
+  
+## Normalidade
+A variável dependente ("Memória") deve apresentar distribuição aproximadamente normal dentro de cada grupo. Os grupos aqui serão formados pela combinação das duas variáveis independentes ("Gênero" e "Álcool"). A normalidade será avaliada pelo teste de Shapiro-Wilk.
+  
+```{r Shapiro por grupo}
+dados %>% group_by(Genero, Alcool) %>% 
+  shapiro_test(Memoria)
+```
+Todos os grupos apresentam distribuição normal (valores de p superiores a 0,05).
+  
+  
+## Ausência de *outliers*
+Outro pressuposto da ANOVA é a ausência de *outliers* em todos os grupos. Isso pode ser verificado através de um gráfico do tipo boxplot.
+  
+```{r Boxplot}
+boxplot(dados$Memoria ~ dados$Genero:dados$Alcool, ylab = "Memória", xlab = "Grupo",
+        names = c("F N", "M N", "F 2C", "M 2C", "F 4C", "M 4C"))
+```
+  
+Os gráficos mostram que não há *outliers* nos grupos analisados.
+  
+  
+## Homogeneidade de variâncias
+Outro pressuposto da ANOVA é que os grupos apresentem variâncias homogêneas. Esse pressuposto será analisado aqui pelo teste de Levene.
+
+```{r Levene}
+leveneTest(Memoria ~ Genero*Alcool, dados, center = mean)
+```
+  
+Os resultados indicam que as variâncias são homogêneas, uma vez que o teste de Levene apresentou p superior a 0,05.
+  
+  
+# Realização do teste de ANOVA de duas vias
+  
+## Trocando o tipo de contraste
+Para essa análise, será utilizado o contraste "soma".
+
+```{r contraste}
+options(contrasts = c("contr.sum", "contr.poly"))
 ```
   
   
-Usando `warning = FALSE` e `message = FALSE`:  
-```{r, warning = FALSE, message = FALSE}
-library(car)
+## Criação do modelo de ANOVA
+Será criado um modelo de ANOVA usando a função `aov`. O modelo escolhido é um modelo fatorial completo, que inclui os efeitos principais das variáveis independentes "Gênero" e "Álcool" bem como a interação entre elas.
+  
+```{r Modelo ANOVA}
+mod.ANOVA <- aov(Memoria ~ Genero*Alcool, dados)
 ```
 
+## Análise dos resultados do modelo
+Para avaliar a significância das variáveis independentes e da sua interação, será utilizada a soma de quadrados do tipo III. Mais informações sobre os tipos de soma dos quadrados podem ser encontradas no livro "Discovering Statistics Using R" [^1].
+
+[^1]: Field, A. P., Miles, J., & Field, Z. (2012). Discovering statistics using R.
+  
 ```{r}
-leveneTest(Memoria ~ Genero, dados)
+Anova(mod.ANOVA, type = 'III')
 ```
+  
+O resultado nos indica que há efeito do "Álcool" [F(2,42) = 20,07; p < 0,001] e da interação entre "Gênero" e "Álcool" [F(2,42) = 11,91; p < 0,001] sobre a memória. Dado que existe interação, os efeitos principais não devem ser interpretados. Para investigar melhor essa interação, será feito um gráfico de linhas.
+
+## Análise da interação entre "Gênero" e "Álcool" sobre a "Memória"
+  
+```{r Gráfico de linhas}
+ggplot(dados, aes(x = Alcool, y = Memoria, group = Genero, color = Genero)) +
+  geom_line(stat = "summary", fun.data = "mean_se", size = 0.6) +
+  geom_point(stat = "summary", fun.y = "mean") +
+  geom_errorbar(stat = "summary", fun.data = "mean_se", width = 0.2) +
+  ylab("Escore de memória") +
+  xlab("Consumo de álcool") +
+  labs(color = "Gênero")
+```
+  
+Pelo gráfico, parece que o consumo de álcool não afetou a memória entre as mulheres. Para os homens, o padrão indica que não houve diferença entre não consumir álcool e consumir duas canecas, mas que o consumo de quatro canecas reduziu o escore de memória.  
+Para verificar se essas diferenças são estatisticamente significativas, faremos comparações entre pares.  
+  
+  
+## Comparações entre pares
+  
+```{r EMMeans Genero}
+dados %>% group_by(Genero) %>% 
+  emmeans_test(Memoria ~ Alcool, p.adjust.method = "bonferroni")
+```
+
+```{r EMMeans Alcool}
+dados %>% group_by(Alcool) %>% 
+  emmeans_test(Memoria ~ Genero, p.adjust.method = "bonferroni")
+```
+  
+Os resultados da comparação entre pares confirmam a hipótese levantada com a análise do gráfico. Há diferença entre os gêneros no escore de memória apenas na condição na qual foram consumidas quatro canecas de álcool. Para o gênero feminino, não houve efeito do álcool sobre a memória. Já para o gênero masculino, o consumo de quatro canecas diminuiu o escore de memória.
+  
+  
+# Análise descritiva {.tabset .tabset-fade}
+
+## Médias e desvios
+```{r, echo=FALSE}
+resumo <- dados %>% group_by(Genero, Alcool) %>%
+                    get_summary_stats(Memoria, type = "mean_sd")
+
+kable(resumo,
+      col.names = c("Gênero", "Álcool", "Variável", "n", "Média", "Desvio Padrão")) %>%
+  kable_styling(full_width = F, bootstrap_options = c("striped", "hover", "condensed", "responsive"))
+```
+
+
+## Gráficos de dispersão por grupo
+```{r, echo=FALSE, warning=FALSE, message=FALSE}
+ggplot(dados, aes(x = Alcool, y = Memoria, color = Genero)) +
+  geom_point() +
+  geom_errorbar(stat = "summary", fun.data = "mean_se", width = 0.2) +
+  ylab("Escore de memória") +
+  xlab("Consumo de álcool") +
+  labs(color = "Gênero") +
+  scale_x_discrete(labels = c('F-N','M-N','F-2C','M-2C','F-4C','M-4C')) +
+  stat_summary(fun.y = mean, fun.ymin = mean, fun.ymax = mean,
+               geom="crossbar", width = 0.5, size = 0.1, show.legend = FALSE)
+```
+  
+<font size="2">Legenda: F = Feminino, M = Masculino, N = Nenhum consumo de álcool, 2C = Consumo de 2 canecas, 4C = Consumo de 4 Canecas.</font>
+
+  
+  
+# Material de Apoio
+  
+* Visualização dos tipos de "highlights": [Por Eran Aviv](https://eranraviv.com/syntax-highlighting-style-in-rmarkdown/)  
+* Visualização das opções de temas: [Por Andrew Zieffler](https://www.datadreaming.org/post/r-markdown-theme-gallery/)  
+* Dicas para personalização de tabelas pelo pacote `kableExtra`: [Por Hao Zhu](https://cran.r-project.org/web/packages/kableExtra/vignettes/awesome_table_in_html.html#html_only_features)  
+* Livro **completo** sobre RMarkdown: [R Markdown Cookbook](https://bookdown.org/yihui/rmarkdown-cookbook/)   
+* Material sobre RMarkdown em português: [RLadies BH](https://rladiesbh.com.br/)  
+  
+  
+# Créditos
+Material criado por **Fernanda F. Peres**.  
+
+* [Canal YouTube](https://youtube.com/c/FernandaPeres)  
+* [Página Estatística Aplicada no Instagram](https://instagram.com/estatisticaaplicada)  
+
